@@ -1,9 +1,14 @@
 import { useMemo, useState } from "react";
-import { activities, contacts, deals } from "../data/fakeData";
+import { useData } from "../data/store";
+import Modal from "../components/Modal";
+import ContactForm from "../components/ContactForm";
+import type { Contact } from "../types";
 
 export default function Contacts() {
+  const { contacts, deals, activities, addContact, updateContact, deleteContact } = useData();
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState(contacts[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(contacts[0]?.id ?? null);
+  const [modal, setModal] = useState<"add" | "edit" | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -14,7 +19,7 @@ export default function Contacts() {
         c.company.toLowerCase().includes(q) ||
         c.email.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, contacts]);
 
   const selected = contacts.find((c) => c.id === selectedId) ?? filtered[0] ?? null;
   const selectedDeals = selected ? deals.filter((d) => d.contactId === selected.id) : [];
@@ -28,11 +33,35 @@ export default function Contacts() {
       .slice(0, 2)
       .toUpperCase();
 
+  const handleAdd = (contact: Omit<Contact, "id">) => {
+    const created = addContact(contact);
+    setSelectedId(created.id);
+    setModal(null);
+  };
+
+  const handleEdit = (contact: Omit<Contact, "id">) => {
+    if (!selected) return;
+    updateContact(selected.id, contact);
+    setModal(null);
+  };
+
+  const handleDelete = () => {
+    if (!selected) return;
+    deleteContact(selected.id);
+    setSelectedId(null);
+    setModal(null);
+  };
+
   return (
     <div>
-      <div className="page-header">
-        <h1>Contacts</h1>
-        <p>{contacts.length} people across your accounts.</p>
+      <div className="page-header page-header-row">
+        <div>
+          <h1>Contacts</h1>
+          <p>{contacts.length} people across your accounts.</p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={() => setModal("add")}>
+          + New Contact
+        </button>
       </div>
 
       <input
@@ -68,12 +97,15 @@ export default function Contacts() {
               <span className="avatar avatar-lg" style={{ background: selected.avatarColor }}>
                 {initials(selected.name)}
               </span>
-              <div>
+              <div className="contact-detail-heading">
                 <h2>{selected.name}</h2>
                 <div className="contact-detail-title">
-                  {selected.title} at {selected.company}
+                  {selected.title ? `${selected.title} at ${selected.company}` : selected.company}
                 </div>
               </div>
+              <button type="button" className="btn btn-secondary" onClick={() => setModal("edit")}>
+                Edit
+              </button>
             </div>
 
             <div className="contact-detail-fields">
@@ -129,6 +161,18 @@ export default function Contacts() {
           </div>
         )}
       </div>
+
+      {modal === "add" && (
+        <Modal title="New Contact" onClose={() => setModal(null)}>
+          <ContactForm onSubmit={handleAdd} />
+        </Modal>
+      )}
+
+      {modal === "edit" && selected && (
+        <Modal title="Edit Contact" onClose={() => setModal(null)}>
+          <ContactForm initial={selected} onSubmit={handleEdit} onDelete={handleDelete} />
+        </Modal>
+      )}
     </div>
   );
 }

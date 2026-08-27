@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { contacts, deals as initialDeals } from "../data/fakeData";
-import type { DealStage } from "../types";
+import { useData } from "../data/store";
+import Modal from "../components/Modal";
+import DealForm from "../components/DealForm";
+import type { Deal, DealStage } from "../types";
 
 const STAGES: DealStage[] = ["New", "Contacted", "Proposal", "Negotiation", "Won", "Lost"];
 
@@ -8,15 +10,14 @@ const currency = (value: number) =>
   value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 export default function Deals() {
-  const [deals, setDeals] = useState(initialDeals);
+  const { contacts, deals, addDeal, updateDeal, deleteDeal, moveDeal } = useData();
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<DealStage | null>(null);
+  const [modal, setModal] = useState<{ mode: "add"; stage: DealStage } | { mode: "edit"; deal: Deal } | null>(
+    null
+  );
 
   const contactById = (id: string) => contacts.find((c) => c.id === id);
-
-  const moveDeal = (dealId: string, stage: DealStage) => {
-    setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, stage } : d)));
-  };
 
   const handleDrop = (stage: DealStage) => {
     if (draggingId) moveDeal(draggingId, stage);
@@ -24,13 +25,40 @@ export default function Deals() {
     setDragOverStage(null);
   };
 
+  const handleAdd = (deal: Omit<Deal, "id">) => {
+    addDeal(deal);
+    setModal(null);
+  };
+
+  const handleEdit = (deal: Omit<Deal, "id">) => {
+    if (modal?.mode !== "edit") return;
+    updateDeal(modal.deal.id, deal);
+    setModal(null);
+  };
+
+  const handleDelete = () => {
+    if (modal?.mode !== "edit") return;
+    deleteDeal(modal.deal.id);
+    setModal(null);
+  };
+
   return (
     <div>
-      <div className="page-header">
-        <h1>Pipeline</h1>
-        <p>
-          {deals.length} deals across {STAGES.length} stages.
-        </p>
+      <div className="page-header page-header-row">
+        <div>
+          <h1>Pipeline</h1>
+          <p>
+            {deals.length} deals across {STAGES.length} stages.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => setModal({ mode: "add", stage: "New" })}
+          disabled={contacts.length === 0}
+        >
+          + New Deal
+        </button>
       </div>
 
       <div className="board">
@@ -73,7 +101,17 @@ export default function Deals() {
                         setDragOverStage(null);
                       }}
                     >
-                      <div className="deal-card-title">{deal.title}</div>
+                      <div className="deal-card-top">
+                        <div className="deal-card-title">{deal.title}</div>
+                        <button
+                          type="button"
+                          className="deal-card-edit"
+                          aria-label={`Edit ${deal.title}`}
+                          onClick={() => setModal({ mode: "edit", deal })}
+                        >
+                          ✎
+                        </button>
+                      </div>
                       <div className="deal-card-value">{currency(deal.value)}</div>
                       {contact && (
                         <div className="deal-card-contact">
@@ -97,6 +135,18 @@ export default function Deals() {
           );
         })}
       </div>
+
+      {modal?.mode === "add" && (
+        <Modal title="New Deal" onClose={() => setModal(null)}>
+          <DealForm contacts={contacts} defaultStage={modal.stage} onSubmit={handleAdd} />
+        </Modal>
+      )}
+
+      {modal?.mode === "edit" && (
+        <Modal title="Edit Deal" onClose={() => setModal(null)}>
+          <DealForm contacts={contacts} initial={modal.deal} onSubmit={handleEdit} onDelete={handleDelete} />
+        </Modal>
+      )}
     </div>
   );
 }

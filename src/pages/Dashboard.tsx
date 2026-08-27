@@ -1,14 +1,19 @@
-import { activities, contacts, deals } from "../data/fakeData";
+import { useData } from "../data/store";
 
 const currency = (value: number) =>
   value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 export default function Dashboard() {
+  const { contacts, deals, activities } = useData();
   const openDeals = deals.filter((d) => d.stage !== "Won" && d.stage !== "Lost");
   const wonDeals = deals.filter((d) => d.stage === "Won");
   const pipelineValue = openDeals.reduce((sum, d) => sum + d.value, 0);
   const wonValue = wonDeals.reduce((sum, d) => sum + d.value, 0);
-  const winRate = Math.round((wonDeals.length / (wonDeals.length + deals.filter((d) => d.stage === "Lost").length)) * 100);
+  const lostDeals = deals.filter((d) => d.stage === "Lost");
+  const winRate =
+    wonDeals.length + lostDeals.length === 0
+      ? 0
+      : Math.round((wonDeals.length / (wonDeals.length + lostDeals.length)) * 100);
 
   const topDeals = [...openDeals].sort((a, b) => b.value - a.value).slice(0, 5);
   const recentActivity = [...activities].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 5);
