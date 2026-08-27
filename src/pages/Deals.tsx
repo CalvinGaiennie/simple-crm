@@ -1,4 +1,5 @@
-import { contacts, deals } from "../data/fakeData";
+import { useState } from "react";
+import { contacts, deals as initialDeals } from "../data/fakeData";
 import type { DealStage } from "../types";
 
 const STAGES: DealStage[] = ["New", "Contacted", "Proposal", "Negotiation", "Won", "Lost"];
@@ -7,13 +8,29 @@ const currency = (value: number) =>
   value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 export default function Deals() {
+  const [deals, setDeals] = useState(initialDeals);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<DealStage | null>(null);
+
   const contactById = (id: string) => contacts.find((c) => c.id === id);
+
+  const moveDeal = (dealId: string, stage: DealStage) => {
+    setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, stage } : d)));
+  };
+
+  const handleDrop = (stage: DealStage) => {
+    if (draggingId) moveDeal(draggingId, stage);
+    setDraggingId(null);
+    setDragOverStage(null);
+  };
 
   return (
     <div>
       <div className="page-header">
         <h1>Pipeline</h1>
-        <p>{deals.length} deals across {STAGES.length} stages.</p>
+        <p>
+          {deals.length} deals across {STAGES.length} stages.
+        </p>
       </div>
 
       <div className="board">
@@ -21,7 +38,19 @@ export default function Deals() {
           const stageDeals = deals.filter((d) => d.stage === stage);
           const stageValue = stageDeals.reduce((sum, d) => sum + d.value, 0);
           return (
-            <div key={stage} className="board-column">
+            <div
+              key={stage}
+              className={`board-column ${dragOverStage === stage ? "drag-over" : ""}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOverStage(stage);
+              }}
+              onDragLeave={() => setDragOverStage((prev) => (prev === stage ? null : prev))}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleDrop(stage);
+              }}
+            >
               <div className="board-column-header">
                 <span className={`stage-pill stage-${stage.toLowerCase()}`}>{stage}</span>
                 <span className="board-column-count">{stageDeals.length}</span>
@@ -31,7 +60,19 @@ export default function Deals() {
                 {stageDeals.map((deal) => {
                   const contact = contactById(deal.contactId);
                   return (
-                    <div key={deal.id} className="deal-card">
+                    <div
+                      key={deal.id}
+                      className={`deal-card ${draggingId === deal.id ? "dragging" : ""}`}
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggingId(deal.id);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragEnd={() => {
+                        setDraggingId(null);
+                        setDragOverStage(null);
+                      }}
+                    >
                       <div className="deal-card-title">{deal.title}</div>
                       <div className="deal-card-value">{currency(deal.value)}</div>
                       {contact && (
@@ -50,7 +91,7 @@ export default function Deals() {
                     </div>
                   );
                 })}
-                {stageDeals.length === 0 && <div className="empty-state">No deals</div>}
+                {stageDeals.length === 0 && <div className="empty-state">Drop deals here</div>}
               </div>
             </div>
           );

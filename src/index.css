@@ -537,6 +537,25 @@ button {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px;
+  cursor: grab;
+  transition: opacity 0.15s, box-shadow 0.15s;
+}
+
+.deal-card:active {
+  cursor: grabbing;
+}
+
+.deal-card.dragging {
+  opacity: 0.4;
+}
+
+.board-column {
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.board-column.drag-over {
+  background: var(--accent-bg);
+  border-color: var(--accent);
 }
 
 .deal-card-title {
