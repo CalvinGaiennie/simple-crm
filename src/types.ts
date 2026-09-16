@@ -1,30 +1,18 @@
-export type DealStage = "New" | "Contacted" | "Proposal" | "Negotiation" | "Won" | "Lost";
+export type ContactStatus = "lead" | "active" | "customer" | "churned";
 
 export interface Contact {
   id: string;
+  user_id: string;
   name: string;
-  company: string;
-  email: string;
-  phone: string;
-  title: string;
-  avatarColor: string;
-  tags: string[];
-  lastContacted: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  status: ContactStatus;
+  notes: string | null;
+  created_at: string;
 }
 
-export interface Deal {
-  id: string;
-  title: string;
-  contactId: string;
-  value: number;
-  stage: DealStage;
-  closeDate: string;
-}
-
-export interface Activity {
-  id: string;
-  contactId: string;
-  type: "call" | "email" | "meeting" | "note";
-  summary: string;
-  date: string;
-}
+export type NewContact = Pick<
+  Contact,
+  "name" | "email" | "phone" | "company" | "status" | "notes"
+>;

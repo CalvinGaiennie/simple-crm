@@ -1,103 +1,93 @@
-import { useState, type FormEvent } from "react";
-import type { Contact } from "../types";
-import ConfirmDeleteButton from "./ConfirmDeleteButton";
+import { FormEvent, useState } from "react";
+import { NewContact, ContactStatus } from "../types";
 
-const COLORS = ["#6366f1", "#0ea5e9", "#f59e0b", "#10b981", "#ec4899", "#8b5cf6", "#ef4444", "#14b8a6"];
+const emptyForm: NewContact = {
+  name: "",
+  email: "",
+  phone: "",
+  company: "",
+  status: "lead",
+  notes: "",
+};
 
-interface ContactFormProps {
-  initial?: Contact;
-  onSubmit: (contact: Omit<Contact, "id">) => void;
-  onDelete?: () => void;
-}
+export default function ContactForm({
+  onCreate,
+}: {
+  onCreate: (contact: NewContact) => Promise<void>;
+}) {
+  const [form, setForm] = useState<NewContact>(emptyForm);
+  const [saving, setSaving] = useState(false);
 
-export default function ContactForm({ initial, onSubmit, onDelete }: ContactFormProps) {
-  const [name, setName] = useState(initial?.name ?? "");
-  const [company, setCompany] = useState(initial?.company ?? "");
-  const [title, setTitle] = useState(initial?.title ?? "");
-  const [email, setEmail] = useState(initial?.email ?? "");
-  const [phone, setPhone] = useState(initial?.phone ?? "");
-  const [tags, setTags] = useState(initial?.tags.join(", ") ?? "");
-  const [avatarColor, setAvatarColor] = useState(initial?.avatarColor ?? COLORS[0]);
-  const [lastContacted, setLastContacted] = useState(
-    initial?.lastContacted ?? new Date().toISOString().slice(0, 10)
-  );
+  function update<K extends keyof NewContact>(key: K, value: NewContact[K]) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
 
-  const handleSubmit = (e: FormEvent) => {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !company.trim()) return;
-    onSubmit({
-      name: name.trim(),
-      company: company.trim(),
-      title: title.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-      tags: tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
-      avatarColor,
-      lastContacted,
-    });
-  };
+    if (!form.name.trim()) return;
+    setSaving(true);
+    await onCreate(form);
+    setForm(emptyForm);
+    setSaving(false);
+  }
 
   return (
-    <form className="form" onSubmit={handleSubmit}>
-      <div className="form-row">
-        <label>
-          Name
-          <input value={name} onChange={(e) => setName(e.target.value)} required />
+    <form onSubmit={handleSubmit} className="card" style={{ marginBottom: 24 }}>
+      <div className="form-grid">
+        <label className="full">
+          Name *
+          <input
+            required
+            value={form.name}
+            onChange={(e) => update("name", e.target.value)}
+          />
         </label>
-        <label>
-          Company
-          <input value={company} onChange={(e) => setCompany(e.target.value)} required />
-        </label>
-      </div>
-      <div className="form-row">
-        <label>
-          Title
-          <input value={title} onChange={(e) => setTitle(e.target.value)} />
-        </label>
-        <label>
-          Last Contacted
-          <input type="date" value={lastContacted} onChange={(e) => setLastContacted(e.target.value)} />
-        </label>
-      </div>
-      <div className="form-row">
         <label>
           Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input
+            type="email"
+            value={form.email ?? ""}
+            onChange={(e) => update("email", e.target.value)}
+          />
         </label>
         <label>
           Phone
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <input
+            value={form.phone ?? ""}
+            onChange={(e) => update("phone", e.target.value)}
+          />
+        </label>
+        <label>
+          Company
+          <input
+            value={form.company ?? ""}
+            onChange={(e) => update("company", e.target.value)}
+          />
+        </label>
+        <label>
+          Status
+          <select
+            value={form.status}
+            onChange={(e) => update("status", e.target.value as ContactStatus)}
+          >
+            <option value="lead">Lead</option>
+            <option value="active">Active</option>
+            <option value="customer">Customer</option>
+            <option value="churned">Churned</option>
+          </select>
+        </label>
+        <label className="full">
+          Notes
+          <textarea
+            rows={2}
+            value={form.notes ?? ""}
+            onChange={(e) => update("notes", e.target.value)}
+          />
         </label>
       </div>
-      <label>
-        Tags <span className="field-hint">(comma-separated)</span>
-        <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Enterprise, Champion" />
-      </label>
-      <div>
-        <span className="field-label">Color</span>
-        <div className="swatch-row">
-          {COLORS.map((color) => (
-            <button
-              key={color}
-              type="button"
-              className={`swatch ${avatarColor === color ? "selected" : ""}`}
-              style={{ background: color }}
-              onClick={() => setAvatarColor(color)}
-              aria-label={color}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="form-actions">
-        {onDelete && <ConfirmDeleteButton label="Delete Contact" onConfirm={onDelete} />}
-        <button type="submit" className="btn btn-primary">
-          {initial ? "Save Changes" : "Add Contact"}
-        </button>
-      </div>
+      <button type="submit" disabled={saving}>
+        {saving ? "Adding..." : "Add contact"}
+      </button>
     </form>
   );
 }
