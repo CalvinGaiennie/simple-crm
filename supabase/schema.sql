@@ -8,8 +8,11 @@ create table if not exists public.contacts (
   email text,
   phone text,
   company text,
-  status text not null default 'lead'
-    check (status in ('lead', 'active', 'customer', 'churned')),
+  status text not null default 'cold'
+    check (status in (
+      'cold', 'warm', 'contacted', 'meeting_set', 'proposal_sent',
+      'closed', 'active', 'invoiced', 'paid_in_full', 'passed'
+    )),
   notes text,
   created_at timestamptz not null default now()
 );

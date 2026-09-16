@@ -1,12 +1,12 @@
 import { FormEvent, useState } from "react";
-import { NewContact, ContactStatus } from "../types";
+import { NewContact, ContactStatus, CONTACT_STATUSES } from "../types";
 
 const emptyForm: NewContact = {
   name: "",
   email: "",
   phone: "",
   company: "",
-  status: "lead",
+  status: "cold",
   notes: "",
 };
 
@@ -70,10 +70,11 @@ export default function ContactForm({
             value={form.status}
             onChange={(e) => update("status", e.target.value as ContactStatus)}
           >
-            <option value="lead">Lead</option>
-            <option value="active">Active</option>
-            <option value="customer">Customer</option>
-            <option value="churned">Churned</option>
+            {CONTACT_STATUSES.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
         </label>
         <label className="full">

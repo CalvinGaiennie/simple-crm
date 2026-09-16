@@ -1,4 +1,4 @@
-import { Contact, ContactStatus } from "../types";
+import { Contact, ContactStatus, CONTACT_STATUSES } from "../types";
 
 export default function ContactList({
   contacts,
@@ -45,10 +45,11 @@ export default function ContactList({
                     onStatusChange(c.id, e.target.value as ContactStatus)
                   }
                 >
-                  <option value="lead">Lead</option>
-                  <option value="active">Active</option>
-                  <option value="customer">Customer</option>
-                  <option value="churned">Churned</option>
+                  {CONTACT_STATUSES.map(({ value, label }) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
                 </select>
               </td>
               <td className="row-actions">
