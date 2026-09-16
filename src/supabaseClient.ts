@@ -1,15 +1,20 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as
   | string
   | undefined;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  // Surfacing this early saves a confusing blank screen when env vars are missing.
-  console.error(
-    "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Copy .env.example to .env and fill in your Supabase project values."
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+
+if (!isSupabaseConfigured) {
+  console.warn(
+    "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY — running in demo mode with local, unsaved data. Copy .env.example to .env and fill in your Supabase project values to connect a real backend."
   );
 }
 
-export const supabase = createClient(supabaseUrl ?? "", supabaseAnonKey ?? "");
+// Only instantiated once real config is present — createClient throws
+// immediately on an empty URL, which is what caused the blank screen.
+export const supabase: SupabaseClient | null = isSupabaseConfigured
+  ? createClient(supabaseUrl!, supabaseAnonKey!)
+  : null;

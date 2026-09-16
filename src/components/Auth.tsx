@@ -1,6 +1,9 @@
 import { FormEvent, useState } from "react";
 import { supabase } from "../supabaseClient";
 
+// Only rendered inside ConnectedApp, which requires isSupabaseConfigured.
+const client = supabase!;
+
 export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,8 +20,8 @@ export default function Auth() {
 
     const { error } =
       mode === "sign-in"
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+        ? await client.auth.signInWithPassword({ email, password })
+        : await client.auth.signUp({ email, password });
 
     if (error) {
       setError(error.message);
